@@ -35,7 +35,7 @@ func connectToDb() {
 
 func migrateDb() {
 	log.Println("Migrating the database to match model")
-	db.AutoMigrate(&Note{}).AddUniqueIndex("id")
+	db.AutoMigrate(&Note{})
 }
 
 func initialiseDb() {

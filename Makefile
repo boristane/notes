@@ -4,4 +4,4 @@
 PIPELINE_LABEL?=local
 
 run:
-	go build . && ./notes
+	go build -o bin/notes . && ./bin/notes

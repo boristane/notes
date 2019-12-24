@@ -1,0 +1,49 @@
+version: "3.7"
+
+services:
+  mysql:
+    container_name: mysql
+    image: mysql/mysql-server:5.7.15
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+    ports: ["3306:3306"]
+    networks:
+      notes:
+        aliases:
+          - mysql
+  localstack:
+    container_name: localstack_notes
+    image: 'localstack/localstack:0.10.4'
+    ports:
+      - '8888:8080'
+      - '4567-4584:4567-4584'
+    environment:
+      - 'SERVICES=s3,sqs,dynamodb,sns,kinesis,firehose'
+    networks:
+      notes: null
+  notes:
+    container_name: notes
+    build: .
+    depends_on:
+      - mysql
+    volumes:
+      - $PWD:/go/src/github.com/boristane/notes
+    command: ["sh", "-c", "tail -f /dev/null"]
+    environment:
+      - ENV=dev
+      - DB_HOST=mysql
+      - DB_USER=root
+      - DB_PASS=password
+      - DB_PORT=3306
+      - DB_NAME=notes
+      - PORT=80
+    ports:
+      - 8080:80
+    networks:
+      notes:
+        aliases:
+          - host
+
+networks:
+  notes:
+      external: false
