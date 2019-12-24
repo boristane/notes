@@ -21,7 +21,7 @@ var (
 
 func connectToDb() {
 	log.Println("Connecting to the databse")
-	dbSource := fmt.Sprintf("root:%s@tcp(%s:%s)/%s?charset=utf8", dbPass, dbHost, dbPort, dbName)
+	dbSource := fmt.Sprintf("root:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=true", dbPass, dbHost, dbPort, dbName)
 	log.Println("Database source:", dbSource)
 
 	var err error
@@ -35,12 +35,13 @@ func connectToDb() {
 
 func migrateDb() {
 	log.Println("Migrating the database to match model")
-	db.AutoMigrate(&Note{})
+	db.AutoMigrate(&Note{}).AddUniqueIndex("idx_note_title_user", "title", "user_id")
 }
 
 func initialiseDb() {
 	connectToDb()
 	migrateDb()
+	db.Debug()
 }
 
 func main() {

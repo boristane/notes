@@ -26,10 +26,22 @@ func requestLogger(next http.Handler) http.Handler {
 	})
 }
 
+func responseMiddleWare(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		next.ServeHTTP(w, r)
+	})
+}
+
 func getRouter() *mux.Router {
 	router := mux.NewRouter()
 	router.Use(requestLogger)
+	router.Use(responseMiddleWare)
 	router.HandleFunc("/healthcheck", healthcheck).Methods("GET")
 	router.HandleFunc("/notes/{id}", getSingleNote).Methods("GET")
+	router.
+		Path("/notes").
+		Queries("id", "{id}").
+		Methods("GET").HandlerFunc(getSingleNote)
 	return router
 }
