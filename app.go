@@ -40,5 +40,6 @@ func getRouter() *mux.Router {
 	router.HandleFunc("/healthcheck", healthcheck).Methods("GET")
 	router.HandleFunc("/notes/{id}", getSingleNote).Methods("GET")
 	router.HandleFunc("/notes/user/{id}", getAllNotes).Methods("GET")
+	router.HandleFunc("/notes", postNote).Methods("POST")
 	return router
 }

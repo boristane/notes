@@ -3,7 +3,7 @@ package main
 import "time"
 
 type BaseModel struct {
-	ID        uint       `gorm:"primary_key;column:id;AUTO_INCREMENT" json:"id"`
+	ID        uint       `json:"id" gorm:"type: serial;primary_key;column:id"`
 	CreatedAt time.Time  `json:"createdAt"`
 	UpdatedAt time.Time  `json:"updatedAt"`
 	DeletedAt *time.Time `sql:"index" json:"deletedAt,omitempty"`

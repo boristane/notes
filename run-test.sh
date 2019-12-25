@@ -13,6 +13,6 @@ docker-compose up -d
 # SNS Topic for emails
 
 docker exec -t mysql mysql -h 127.0.0.1 -u root -ppassword -e "create database notes" || true
-docker exec -t mysql mysql -h 127.0.0.1 -u root -ppassword -e "use notes; CREATE TABLE notes (id int);" || true
+docker exec -t mysql mysql -h 127.0.0.1 -u root -ppassword -e "use notes; CREATE TABLE notes (id int unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY);" || true
 
 # docker-compose down
