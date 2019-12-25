@@ -1,18 +1,18 @@
 package main
 
-import (
-	"github.com/jinzhu/gorm"
-)
+import "time"
 
+type BaseModel struct {
+	ID        uint       `gorm:"primary_key;column:id;AUTO_INCREMENT" json:"id"`
+	CreatedAt time.Time  `json:"createdAt"`
+	UpdatedAt time.Time  `json:"updatedAt"`
+	DeletedAt *time.Time `sql:"index" json:"deletedAt,omitempty"`
+}
 type Note struct {
-	gorm.Model
-	ID      uint   `gorm:"column:id;primary_index;AUTO_INCREMENT" json:"ID"`
-	Title   string `gorm:"not null" json:"Title" validate:"required"`
-	Content string `json:"Content"`
-	UserID  int    `gorm:"not null" json:"UserId" validate:"required"`
-	// CreatedAt time.Time `json:"CreatedAt" gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP"`
-	// UpdatedAt time.Time `json:"UpdatedAt" gorm:"column:updated_at;not null;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"`
-	// DeletedAt time.Time `json:"DeletedAt" gorm:"default:null;column:deleted_at"`
+	BaseModel
+	Title   string `gorm:"not null" json:"title" validate:"required"`
+	Content string `json:"content"`
+	UserID  int    `gorm:"not null" json:"userId" validate:"required"`
 }
 
 func createNote(note *Note) (uint, error) {
@@ -26,10 +26,13 @@ func createNote(note *Note) (uint, error) {
 func getNote(id uint64) *Note {
 	var note = &Note{}
 	db.First(&note, id)
-	if !note.CreatedAt.IsZero() {
-		note.ID = uint(id)
-	}
 	return note
+}
+
+func getNotesForUser(userID uint64) []Note {
+	var notes = []Note{}
+	db.Where("user_id = ?", userID).Find(&notes)
+	return notes
 }
 
 func updateNote(id uint, title string, content string) *Note {
