@@ -37,6 +37,7 @@ services:
       - DB_PORT=3306
       - DB_NAME=notes
       - PORT=80
+      - JWT_USERS_KEY=jwt-users-key
     ports:
       - 8080:80
     networks:

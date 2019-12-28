@@ -37,12 +37,23 @@ type DeleteNoteResponse struct {
 func getSingleNote(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.ParseUint(vars["id"], 10, 32)
+
 	if err != nil {
 		log.Println("Trying to access a NaN note with id:" + vars["id"])
 		send500(w, "Trying to access a note with an invalid ID")
 		return
 	}
-	note := getNote(id)
+	note, errr := getNote(id)
+	if errr != nil {
+		log.Printf("Error getting the note, %v", err)
+		send404(w)
+		return
+	}
+	userID, ok := r.Context().Value(user_id).(uint64)
+	if !ok || note.UserID != userID {
+		send401(w)
+		return
+	}
 	noteJSON, err := json.Marshal(note)
 	if err != nil {
 		log.Println("Unable to JSON parse the note" + err.Error())
@@ -50,11 +61,6 @@ func getSingleNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("Got one note for id %d %s", id, string(noteJSON))
-	if note.ID == 0 {
-		w.WriteHeader(http.StatusNotFound)
-		_ = json.NewEncoder(w).Encode(&HTTPErrorMessage{Message: "Note not found", Code: "NONE_FOUND"})
-		return
-	}
 	json.NewEncoder(w).Encode(&note)
 }
 
@@ -75,8 +81,7 @@ func getAllNotes(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("Got note for userID %d %s", userID, string(notesJSON))
 	if len(notes) == 0 {
-		w.WriteHeader(http.StatusNotFound)
-		_ = json.NewEncoder(w).Encode(&HTTPErrorMessage{Message: "Note not found", Code: "NONE_FOUND"})
+		send404(w)
 		return
 	}
 	json.NewEncoder(w).Encode(notes)
@@ -143,4 +148,14 @@ func decodeAndValidateRequest(w http.ResponseWriter, r *http.Request, data inter
 func send500(w http.ResponseWriter, message string) {
 	w.WriteHeader(http.StatusInternalServerError)
 	_ = json.NewEncoder(w).Encode(&HTTPErrorMessage{Message: message, Code: "INTERNAL_SERVER_ERROR"})
+}
+
+func send401(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusUnauthorized)
+	_ = json.NewEncoder(w).Encode(&HTTPErrorMessage{Message: "You're not authorised to perform this action", Code: "UNAUTHORIZED"})
+}
+
+func send404(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusNotFound)
+	_ = json.NewEncoder(w).Encode(&HTTPErrorMessage{Message: "Note not found", Code: "NONE_FOUND"})
 }

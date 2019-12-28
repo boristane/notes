@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"time"
 )
 
@@ -29,10 +30,13 @@ func createNote(note *Note) (uint, error) {
 	return note.ID, nil
 }
 
-func getNote(id uint64) *Note {
+func getNote(id uint64) (*Note, error) {
 	var note = &Note{}
 	db.First(&note, id)
-	return note
+	if note.ID == 0 {
+		return note, errors.New("Could not find the note")
+	}
+	return note, nil
 }
 
 func getNotesForUser(userID uint64) []Note {
