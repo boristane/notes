@@ -14,11 +14,13 @@ import (
 
 var validate *validator.Validate
 
+// HTTPErrorMessage message to send when there is an error on requests
 type HTTPErrorMessage struct {
 	Message string `json:"message"`
 	Code    string `json:"code"`
 }
 
+// CreateNoteResponse the response to send to a create note request
 type CreateNoteResponse struct {
 	Message string `json:"message"`
 	ID      uint   `json:"id"`
