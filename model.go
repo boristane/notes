@@ -1,6 +1,8 @@
 package main
 
-import "time"
+import (
+	"time"
+)
 
 // BaseModel a base model to include the on every database entity
 type BaseModel struct {
@@ -15,7 +17,7 @@ type Note struct {
 	BaseModel
 	Title    string `gorm:"not null" json:"title" validate:"required"`
 	Content  string `json:"content"`
-	UserID   int    `gorm:"not null" json:"userId" validate:"required"`
+	UserID   uint64 `gorm:"not null" json:"userId" validate:"required"`
 	ImageURL string `json:"imageUrl"`
 }
 
@@ -49,8 +51,13 @@ func updateNote(id uint, title string, content string, imageURL string) *Note {
 	return note
 }
 
-func deleteNote(id uint) {
-	var note *Note
+func deleteNote(id uint64, userID uint64) bool {
+	// TODO This is the worst authorisation check ever.
+	var note = &Note{}
 	db.First(&note, id)
+	if note.UserID != userID {
+		return false
+	}
 	db.Delete(&note)
+	return true
 }

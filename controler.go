@@ -27,12 +27,19 @@ type CreateNoteResponse struct {
 	URL     string `json:"url"`
 }
 
+// DeleteNoteResponse the response to send to a create note request
+type DeleteNoteResponse struct {
+	Message string `json:"message"`
+	ID      uint64 `json:"id"`
+	URL     string `json:"url"`
+}
+
 func getSingleNote(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.ParseUint(vars["id"], 10, 32)
 	if err != nil {
 		log.Println("Trying to access a NaN note with id:" + vars["id"])
-		send500(w, "Trying to access a NaN note")
+		send500(w, "Trying to access a note with an invalid ID")
 		return
 	}
 	note := getNote(id)
@@ -56,7 +63,7 @@ func getAllNotes(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.ParseUint(vars["id"], 10, 32)
 	if err != nil {
 		log.Println("Trying to access a NaN user with id:" + vars["id"])
-		send500(w, "Trying to access a NaN user")
+		send500(w, "Trying to access a user with an invalid ID")
 		return
 	}
 	notes := getNotesForUser(userID)
@@ -88,6 +95,29 @@ func postNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(&CreateNoteResponse{ID: id, Message: "Note created", URL: fmt.Sprintf("/notes/%d", id)})
+}
+
+func deleteSingleNote(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.ParseUint(vars["id"], 10, 32)
+	userID, uerr := strconv.ParseUint(vars["userID"], 10, 32)
+	if err != nil {
+		log.Printf("Triying to delete a note with invalid id %s", vars["id"])
+		send500(w, "Trying to delete a note with an invalid ID")
+		return
+	}
+	if uerr != nil {
+		log.Printf("Triying to delete a note with invalid userId %s", vars["id"])
+		send500(w, "Trying to delete a note with an invalid ID")
+		return
+	}
+	deleted := deleteNote(id, userID)
+	if !deleted {
+		log.Printf("Triying to delete a note with invalid (id, userID) pair (%d, %d)", id, userID)
+		send500(w, "Unauthorised Operation")
+		return
+	}
+	json.NewEncoder(w).Encode(&DeleteNoteResponse{ID: id, Message: "Note deleted", URL: fmt.Sprintf("/notes/user/%d", userID)})
 }
 
 func healthcheck(w http.ResponseWriter, r *http.Request) {
