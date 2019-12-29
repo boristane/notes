@@ -42,8 +42,8 @@ func getRouter() *mux.Router {
 	subrouter := router.PathPrefix("/notes").Subrouter()
 	subrouter.Use(authMiddleware)
 	subrouter.HandleFunc("/{id}", getSingleNote).Methods("GET")
-	subrouter.HandleFunc("/{userID}/{id}", deleteSingleNote).Methods("DELETE")
-	subrouter.HandleFunc("/user/{id}", getAllNotes).Methods("GET")
+	subrouter.HandleFunc("/{id}", deleteSingleNote).Methods("DELETE")
+	subrouter.HandleFunc("/", getAllNotes).Methods("GET")
 	subrouter.HandleFunc("/", postNote).Methods("POST")
 
 	return router

@@ -18,7 +18,7 @@ type Note struct {
 	BaseModel
 	Title    string `gorm:"not null" json:"title" validate:"required"`
 	Content  string `json:"content"`
-	UserID   uint64 `gorm:"not null" json:"userId" validate:"required"`
+	UserID   uint64 `gorm:"not null" json:"userId"`
 	ImageURL string `json:"imageUrl"`
 }
 
@@ -41,7 +41,7 @@ func getNote(id uint64) (*Note, error) {
 
 func getNotesForUser(userID uint64) []Note {
 	var notes = []Note{}
-	db.Select([]string{"title", "content", "image_url"}).Where("user_id = ?", userID).Find(&notes)
+	db.Where("user_id = ?", userID).Find(&notes)
 	return notes
 }
 
@@ -55,13 +55,8 @@ func updateNote(id uint, title string, content string, imageURL string) *Note {
 	return note
 }
 
-func deleteNote(id uint64, userID uint64) bool {
-	// TODO This is the worst authorisation check ever.
+func deleteNote(id uint64) {
 	var note = &Note{}
 	db.First(&note, id)
-	if note.UserID != userID {
-		return false
-	}
 	db.Delete(&note)
-	return true
 }

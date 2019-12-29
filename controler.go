@@ -45,7 +45,7 @@ func getSingleNote(w http.ResponseWriter, r *http.Request) {
 	}
 	note, errr := getNote(id)
 	if errr != nil {
-		log.Printf("Error getting the note, %v", err)
+		log.Printf("Error getting the note, %v", errr)
 		send404(w)
 		return
 	}
@@ -65,11 +65,9 @@ func getSingleNote(w http.ResponseWriter, r *http.Request) {
 }
 
 func getAllNotes(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	userID, err := strconv.ParseUint(vars["id"], 10, 32)
-	if err != nil {
-		log.Println("Trying to access a NaN user with id:" + vars["id"])
-		send500(w, "Trying to access a user with an invalid ID")
+	userID, ok := r.Context().Value(user_id).(uint64)
+	if !ok {
+		send401(w)
 		return
 	}
 	notes := getNotesForUser(userID)
@@ -89,10 +87,18 @@ func getAllNotes(w http.ResponseWriter, r *http.Request) {
 
 func postNote(w http.ResponseWriter, r *http.Request) {
 	var requestData Note
-	err := decodeAndValidateRequest(w, r, &requestData)
-	if err != nil {
+	userID, ok := r.Context().Value(user_id).(uint64)
+	if !ok {
+		send401(w)
 		return
 	}
+	err := decodeAndValidateRequest(w, r, &requestData)
+	if err != nil {
+		log.Println(err.Error())
+		send500(w, "Error creating note")
+		return
+	}
+	requestData.UserID = userID
 	id, createError := createNote(&requestData)
 	if createError != nil {
 		log.Println(createError.Error())
@@ -105,24 +111,24 @@ func postNote(w http.ResponseWriter, r *http.Request) {
 func deleteSingleNote(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.ParseUint(vars["id"], 10, 32)
-	userID, uerr := strconv.ParseUint(vars["userID"], 10, 32)
 	if err != nil {
 		log.Printf("Triying to delete a note with invalid id %s", vars["id"])
 		send500(w, "Trying to delete a note with an invalid ID")
 		return
 	}
-	if uerr != nil {
-		log.Printf("Triying to delete a note with invalid userId %s", vars["id"])
-		send500(w, "Trying to delete a note with an invalid ID")
+	note, errr := getNote(id)
+	if errr != nil {
+		log.Printf("Error getting the note to delete, %v", errr)
+		send404(w)
 		return
 	}
-	deleted := deleteNote(id, userID)
-	if !deleted {
-		log.Printf("Triying to delete a note with invalid (id, userID) pair (%d, %d)", id, userID)
-		send500(w, "Unauthorised Operation")
+	userID, ok := r.Context().Value(user_id).(uint64)
+	if !ok || note.UserID != userID {
+		send401(w)
 		return
 	}
-	json.NewEncoder(w).Encode(&DeleteNoteResponse{ID: id, Message: "Note deleted", URL: fmt.Sprintf("/notes/user/%d", userID)})
+	deleteNote(id)
+	json.NewEncoder(w).Encode(&DeleteNoteResponse{ID: id, Message: "Note deleted", URL: fmt.Sprintf("/notes/")})
 }
 
 func healthcheck(w http.ResponseWriter, r *http.Request) {
