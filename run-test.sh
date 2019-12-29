@@ -10,7 +10,8 @@ docker-compose up -d
 #   sleep 2
 # done
 
-# SNS Topic for emails
+# Bucket for images
+aws s3api create-bucket --bucket images --endpoint-url 'http://localhost:4572' --region us-west-1
 
 docker exec -t mysql mysql -h 127.0.0.1 -u root -ppassword -e "create database notes" || true
 docker exec -t mysql mysql -h 127.0.0.1 -u root -ppassword -e "use notes; CREATE TABLE notes (id int unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY);" || true

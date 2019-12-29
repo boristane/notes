@@ -35,7 +35,7 @@ func responseMiddleWare(next http.Handler) http.Handler {
 
 func getRouter() *mux.Router {
 	router := mux.NewRouter()
-	router.Use(requestLogger)
+	// router.Use(requestLogger)
 	router.Use(responseMiddleWare)
 	router.HandleFunc("/healthcheck", healthcheck).Methods("GET")
 

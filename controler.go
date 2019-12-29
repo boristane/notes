@@ -3,13 +3,15 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
-	"gopkg.in/go-playground/validator.v9"
-
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 var validate *validator.Validate
@@ -92,14 +94,14 @@ func postNote(w http.ResponseWriter, r *http.Request) {
 		send401(w)
 		return
 	}
-	err := decodeAndValidateRequest(w, r, &requestData)
+	note, err := decodeAndValidateRequest(w, r, &requestData)
 	if err != nil {
 		log.Println(err.Error())
 		send500(w, "Error creating note")
 		return
 	}
-	requestData.UserID = userID
-	id, createError := createNote(&requestData)
+	note.UserID = userID
+	id, createError := createNote(note)
 	if createError != nil {
 		log.Println(createError.Error())
 		send500(w, "Error creating note")
@@ -135,20 +137,53 @@ func healthcheck(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode("Still Alive")
 }
 
-func decodeAndValidateRequest(w http.ResponseWriter, r *http.Request, data interface{}) error {
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&data)
+// For JSON body
+// func decodeAndValidateRequest(w http.ResponseWriter, r *http.Request, data interface{}) error {
+// 	decoder := json.NewDecoder(r.Body)
+// 	err := decoder.Decode(&data)
+// 	if err != nil {
+// 		log.Printf("Unable to decode the request body based on the schema %v, %v. Error: %s", data, r.Body, err.Error())
+// 	}
+// 	validate = validator.New()
+// 	err = validate.Struct(data)
+// 	if err != nil {
+// 		log.Printf("Request validation error %v. Body: %v\n", err.Error(), data)
+// 		w.WriteHeader(http.StatusBadRequest)
+// 		_ = json.NewEncoder(w).Encode(&HTTPErrorMessage{Message: "Error validating request", Code: "BAD_REQUEST"})
+// 	}
+// 	return err
+// }
+
+func decodeAndValidateRequest(w http.ResponseWriter, r *http.Request, data interface{}) (*Note, error) {
+
+	var note = &Note{}
+	r.ParseMultipartForm(32 << 20)
+
+	title := r.FormValue("title")
+	content := r.FormValue("content")
+	note.Title = title
+	note.Content = content
+
+	file, _, err := r.FormFile("image")
 	if err != nil {
-		log.Printf("Unable to decode the request body based on the schema %v, %v. Error: %s", data, r.Body, err.Error())
+		return nil, err
 	}
-	validate = validator.New()
-	err = validate.Struct(data)
+	defer file.Close()
+	filename, _ := uuid.NewUUID()
+	f, errr := os.OpenFile("/tmp/"+filename.String()+".png", os.O_WRONLY|os.O_CREATE, 0666)
+	if errr != nil {
+		return nil, err
+	}
+	io.Copy(f, file)
+
+	// Upload
+	err = AddFileToS3(s3Session, "/tmp/"+filename.String()+".png", filename.String()+".png")
 	if err != nil {
-		log.Printf("Request validation error %v. Body: %v\n", err.Error(), data)
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(&HTTPErrorMessage{Message: "Error validating request", Code: "BAD_REQUEST"})
+		log.Printf(err.Error())
+		return nil, err
 	}
-	return err
+	note.ImageURL = fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s.png", S3Bucket, S3Region, filename.String())
+	return note, err
 }
 
 func send500(w http.ResponseWriter, message string) {
