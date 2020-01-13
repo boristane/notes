@@ -17,7 +17,7 @@ type BaseModel struct {
 type Note struct {
 	BaseModel
 	Title    string `gorm:"not null" json:"title" validate:"required"`
-	Content  string `json:"content"`
+	Content  string `sql:"type:text;" json:"content"`
 	UserID   uint64 `gorm:"not null" json:"userId"`
 	ImageURL string `json:"imageUrl"`
 }
