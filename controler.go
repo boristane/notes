@@ -80,10 +80,6 @@ func getAllNotes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("Got note for userID %d %s", userID, string(notesJSON))
-	if len(notes) == 0 {
-		send404(w)
-		return
-	}
 	json.NewEncoder(w).Encode(notes)
 }
 
